@@ -1,11 +1,12 @@
 # Raspberry Pi 5 Home SOC Lab
 
 Hands-on security lab built while studying for CompTIA Network+ and Security+.
-Goal: a fully documented home SOC — DNS filtering, default-deny firewall,
-IDS, and SIEM — with investigation write-ups for every incident and finding.
+Goal: a fully documented home SOC, DNS filtering, default-deny firewall,
+IDS, and SIEM with investigation write-ups for every incident and finding.
 
 ## Architecture
 
+```
 [Internet] ── [ISP Gateway 10.0.0.1] ── LAN 10.0.0.0/24
                                           ├── Raspberry Pi 5 "Cris-pi" (10.0.0.169)
                                           │     ├── Pi-hole (Docker) — DNS filtering :53, web :8080
