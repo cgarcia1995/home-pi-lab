@@ -13,7 +13,7 @@ IDS, and SIEM with investigation write-ups for every incident and finding.
                                           │     └── nftables — default-deny host firewall
                                           ├── MacBook Pro (admin workstation / scan source)
                                           └── Other LAN clients
-
+```
 ## Completed
 
 - **Headless Linux server** — Raspberry Pi OS Lite (64-bit), administered
