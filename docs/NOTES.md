@@ -33,10 +33,10 @@ env vars becomes immutable at runtime.
 **Resolution:** Moved the change into docker-compose.yml, making the env
 var the single source of truth.
 
-**Lesson:** "Read-only" was the system enforcing configuration as code —
+**Lesson:** "Read-only" was the system enforcing configuration as code
 the desirable end state anyway. Service config now lives in version control.
 
-## Finding 3 — rpcbind exposure (111/tcp) — full vulnerability cycle
+## Finding 3 — rpcbind exposure (111/tcp)/ full vulnerability cycle
 
 **Detection:** Port scan showed 111/tcp open on the Pi.
 
@@ -70,11 +70,39 @@ external nmap from the MacBook showed only 22, 53, 8080 exposed.
   left the IPv6 listener exposed. The nftables `inet` table covers both
   families in one ruleset.
 
+## Finding 4 — DNS outage: FORWARD chain blocked container upstream traffic
+
+**Symptom:** dig/nslookup against Pi-hole timed out for all clients. Inside
+the container, `pihole status` showed FTL healthy and listening but even
+`dig @127.0.0.1` from inside the container timed out.
+
+**Diagnosis path:** ss confirmed port 53 bound (docker-proxy); docker inspect
+confirmed correct port bindings; in-container test isolated the failure to
+upstream resolution, not the listener.
+
+**Root cause:** The nftables forward chain was `policy drop` with no accept
+rules. Container-to-internet traffic traverses FORWARD, so Pi-hole's queries
+to upstream DNS were silently dropped since the firewall was enabled.
+
+**Why it was masked:** Cached answers and blocklist hits are served locally
+and never need upstream, so earlier tests (cached google.com, blocked
+doubleclick.net) appeared healthy. The outage surfaced only after cache
+entries expired.
+
+**Fix:** Added to the forward chain: `ct state established,related accept`
+and `ip saddr 172.16.0.0/12 accept` (Docker compose bridge range). Also
+learned: `flush ruleset` wipes Docker's NAT rules, so any manual
+`nft -f` reload must be followed by `systemctl restart docker`.
+
+**Lesson:** Default-deny applies per chain hardening INPUT while
+forgetting FORWARD broke the very service the firewall protects. Test with
+uncached domains; caches can hide upstream failures.
+
 ## Lesson — Listening vs. Exposed (scan vantage point)
 
 A scan run ON the Pi against itself traverses the loopback path, which the
-firewall explicitly allows — it reveals every LISTENING service and bypasses
-filtering. A scan from another host must cross the nftables input chain —
+firewall explicitly allows it reveals every LISTENING service and bypasses
+filtering. A scan from another host must cross the nftables input chain
 it reveals what is actually EXPOSED. The 111/tcp "open" result came from an
 on-host scan; the external view never exposed it. Both perspectives are
 useful: on-host = service inventory, external = attack surface.
