@@ -35,8 +35,8 @@ IDS, and SIEM with investigation write-ups for every incident and finding.
 
 ## Roadmap
 
-- [ ] Suricata IDS — deployment, custom rules, false-positive tuning
-- [ ] Wazuh SIEM — endpoint agents + Suricata log integration
+- [x] Suricata IDS — deployment, custom rule
+- [x] SIEM — Loki + Promtail + Grafana with Suricata log integration 
 - [ ] Investigation write-ups — simulated brute-force, scan detection
 - [ ] WireGuard VPN — remote access with split-tunnel DNS via Pi-hole
 - [ ] Internal vulnerability assessment report (full network)
