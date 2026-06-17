@@ -111,3 +111,105 @@ Related: with default-deny in place, the host stopped answering nmap's
 discovery probes entirely ("Host seems down"); enumeration required `-Pn`.
 Default-deny reduces visibility to casual scanning but is not invisibility —
 real attackers scan with -Pn by default.
+
+## Finding 5 — Suricata IDS: capture failure on Wi-Fi (af-packet vs libpcap)
+
+**Goal:** Deploy Suricata as a network IDS, trigger a detection, author a
+custom rule. Interface: wlan0 (Pi runs over Wi-Fi; eth0 was down).
+HOME_NET: 10.0.0.0/24. Pulled ET Open ruleset (~50k rules) via suricata-update.
+
+**Symptom:** Service showed active (running), config valid, 50k rules loaded,
+but a known-good trigger (curl to testmynids.org returning "uid=0(root)")
+produced NO alert.
+
+**Diagnosis:** Confirmed the service was genuinely running and the trigger
+traffic was real (curl returned the uid=0(root) string). Checked capture
+stats in stats.log: `capture.afpacket.polls` == `capture.afpacket.poll_timeout`
+(equal counts) — Suricata was attached to wlan0 but receiving zero packets
+on every poll.
+
+**Root cause:** af-packet capture mode does not reliably pull traffic from
+this Wi-Fi interface/driver. Known limitation of wireless + af-packet.
+
+**Fix:** Switched capture to libpcap. Verified live in the foreground
+(`suricata -c suricata.yaml --pcap=wlan0 -v`); the trigger then fired:
+`[1:2100498:7] GPL ATTACK_RESPONSE id check returned root` (over IPv6).
+Made permanent with a systemd override (`systemctl edit suricata`):
+
+    [Service]
+    ExecStart=
+    ExecStart=/usr/bin/suricata -c /etc/suricata/suricata.yaml --pcap=wlan0 --pidfile /run/suricata.pid -D
+
+After daemon-reload + restart, capture.kernel_packets climbs steadily,
+confirming live capture as a service.
+
+**Custom rule authored** (/var/lib/suricata/rules/local.rules):
+
+    alert icmp any any -> $HOME_NET any (msg:"LOCAL Custom Rule - ICMP ping detected"; sid:1000001; rev:1;)
+
+sid in the 1000000+ range (reserved for local rules). Triggered with a ping;
+alert fired with the custom message and SID. Note: the rule had to live in
+/var/lib/suricata/rules/ (the path suricata-update manages) and be listed in
+rule-files in suricata.yaml. a first attempt in /etc/suricata/rules/ wasn't
+loaded. Also learned: always `cat` a file after a sudo-nano edit; a silent
+save failure left local.rules empty the first time.
+
+**Lessons:**
+- A running IDS service is not a working IDS — verify it actually captures
+  packets (equal poll/poll_timeout counts = listening but receiving nothing).
+- Capture method matters: af-packet (fast, wired) vs libpcap (slower, Wi-Fi
+  compatible). Speed cost is irrelevant at home-lab volume.
+- Detection worked over IPv6 without extra config — dual-stack visibility,
+  same theme as the rpcbind finding.
+
+
+## Finding 6 — Wazuh SIEM: ARM64 incompatibility, informed pivot
+
+**Goal:** Deploy Wazuh single-node (indexer + manager + dashboard) as the SIEM.
+
+**Symptom:** The wazuh.indexer container crash-looped with
+`exec /entrypoint.sh: exec format error`, repeating Restarting (255).
+
+**Root cause:** `exec format error` = wrong CPU architecture. The Pi 5 is
+ARM64; Wazuh's v4.9.0 indexer/dashboard images are built for x86/amd64.
+Wazuh's indexer and dashboard historically lack ARM64 support (the manager
+runs on ARM, but the searchable UI components do not).
+
+**Decision:** Rather than force an unsupported config, pivoted to a lighter,
+ARM-native stack: Grafana Loki + Promtail + Grafana,same core capability
+(centralized log aggregation, queryable dashboards, Suricata integration) on
+hardware that actually supports it. Cleanup: `docker compose down -v` and
+`docker image prune -a -f` to remove the dead x86 images.
+
+**Lesson:** Check architecture support before deploying. Knowing when to pivot
+vs. force a square peg is a real engineering judgment call.
+
+## Finding 7 — Loki + Promtail + Grafana SIEM (Suricata integration)
+
+**Stack:** Suricata eve.json -> Promtail -> Loki -> Grafana. ARM64-native,
+lightweight. Added an nftables rule for Grafana (tcp 3000, LAN-only).
+
+**Key issue — Loki ingestion rate limit (429):** Promtail logged
+`429 Too Many Requests: Ingestion rate limit exceeded (4MB/sec)`. Suricata's
+eve.json logs every DNS/flow/decode event (~19k/hour) — a firehose that blew
+past Loki's default limit, dropping batches so the dashboard stopped updating.
+Fix: loki-config.yaml raising ingestion_rate_mb to 50 / burst to 100.
+
+**Persistence:** Grafana dashboards initially vanished on container
+recreation the service had no volume, so its internal DB reset. Fixed with a
+named volume (grafana-data:/var/lib/grafana).
+
+**Dashboard:** 5 panels — Alerts, Total Events, Events by Type, Alerts Over
+Time, and a live Suricata Alert Feed. (LogQL note: Stat panels use Instant;
+time-series use Range.)
+
+**Verification:** Suricata fast.log shows custom rule 1000001 firing on each
+ping; Grafana Explore `{job="suricata"}` returns live parsed JSON with current
+timestamps  confirming the full pipeline works end to end.
+
+**Lessons (SOC-relevant):**
+- Alert dedup: repeated identical pings produce fewer alerts than packets sent
+  — IDS engines aggregate duplicate signatures to prevent alert fatigue.
+- Events vs. alerts: total volume != detections. Most traffic (DNS, flows) is
+  benign; a SIEM that ingests everything hits volume limits fast (the 429) —
+  real deployments filter what they collect.
