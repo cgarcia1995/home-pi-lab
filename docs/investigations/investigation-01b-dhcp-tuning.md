@@ -1,14 +1,8 @@
 # Investigation 01b — False Positive Tuning (DHCP)
 
-**Analyst:** C. Garcia
-**Date:** 2026-07-07
-**Environment:** Home SOC Lab (Raspberry Pi 5)
-**Type:** Alert tuning on my own equipment
-**Status:** Resolved
-
 ## Summary
 
-While watching my logs during Investigation 01, I noticed Suricata firing the same alert once every hour from my router — signature 2227001, "DHCP truncated options." It's harmless: just normal router broadcasts that happen to trip the rule. It was noise, so I suppressed it. The important part is I did it surgically — I silenced that one signature only from the router's IP, so the same alert would still fire from any other source.
+While watching my logs during Investigation 01, I noticed Suricata firing the same alert once every hour from my router: signature 2227001, "DHCP truncated options." It's harmless: just normal router broadcasts that happen to trip the rule. It was noise, so I suppressed it. The important part isI silenced that one signature only from the router's IP, so the same alert would still fire from any other source.
 
 ## Why It Mattered
 
@@ -30,6 +24,4 @@ The threshold file wasn't being loaded (the `threshold-file:` line in `suricata.
 
 ## The Key Decision
 
-I suppressed by signature *and* source instead of just disabling the rule. Turning the whole rule off would have blinded me to a genuinely malformed DHCP packet from some other host — which could be a real problem. Scoping the suppression to the known-benign source keeps full detection everywhere else. That tradeoff — cutting noise without losing coverage — is the whole point of tuning.
-
-*Authorized tuning on equipment I own.*
+I suppressed by signature *and* source instead of just disabling the rule. Turning the whole rule off would have blinded me to a genuinely malformed DHCP packet from some other host which could be a real problem. Scoping the suppression to the known-benign source keeps full detection everywhere else. That tradeoff, cutting noise without losing coverage which is the whole point of tuning.
