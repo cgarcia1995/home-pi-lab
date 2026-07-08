@@ -1,6 +1,29 @@
-.env
+# Secrets & keys — never commit
 *.key
+*.pem
+id_ed25519*
+id_rsa*
+*.env
+.env
+secrets/
+credentials*
+
+# Logs & captures
+*.log
+*.pcap
+*.pcapng
+
+# Suricata runtime data
+eve.json
+fast.log
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Pi-hole runtime data — contains DNS query logs (privacy) and config
 pihole/etc-pihole/
 pihole/etc-dnsmasq.d/
+
+# Nested/cloned tool repos — not part of this project
 wazuh-docker/
-*.bak

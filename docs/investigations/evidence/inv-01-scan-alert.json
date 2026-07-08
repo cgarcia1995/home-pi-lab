@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-07-07T21:25:01.228798-0700",
+  "flow_id": 1545630272171098,
+  "in_iface": "wlan0",
+  "event_type": "alert",
+  "src_ip": "10.0.0.172",
+  "src_port": 39288,
+  "dest_ip": "10.0.0.169",
+  "dest_port": 80,
+  "proto": "TCP",
+  "pkt_src": "wire/pcap",
+  "alert": {
+    "action": "allowed",
+    "gid": 1,
+    "signature_id": 1000001,
+    "rev": 1,
+    "signature": "LOCAL Nmap SYN scan detected - possible port scan",
+    "category": "Attempted Information Leak",
+    "severity": 2
+  },
+  "direction": "to_server",
+  "flow": {
+    "pkts_toserver": 1,
+    "pkts_toclient": 0,
+    "bytes_toserver": 58,
+    "bytes_toclient": 0,
+    "start": "2026-07-07T21:25:01.228798-0700",
+    "src_ip": "10.0.0.172",
+    "dest_ip": "10.0.0.169",
+    "src_port": 39288,
+    "dest_port": 80
+  }
+}
