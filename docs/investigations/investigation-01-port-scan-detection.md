@@ -1,11 +1,5 @@
 # Investigation 01 — Port Scan Detection
 
-**Analyst:** C. Garcia
-**Date:** 2026-07-07
-**Environment:** Home SOC Lab (Raspberry Pi 5)
-**Type:** Authorized test against my own equipment
-**Status:** Resolved
-
 ## Summary
 
 I ran a port scan against my own Pi to prove my lab could detect it. At first nothing alerted, even though Suricata was clearly seeing the traffic. I traced it to two problems: my custom rule was never saved to a file Suricata loads, and once fixed, the rule's direction logic didn't match a scan coming from inside my own network. After correcting both, my rule (SID 1000001) caught the scan and I confirmed it in `fast.log` and `eve.json`.
