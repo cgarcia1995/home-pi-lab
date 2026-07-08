@@ -1,6 +1,6 @@
 # Raspberry Pi 5 Home SOC Lab
 
-A hands-on security operations lab I built on a Raspberry Pi 5 while studying for CompTIA Network+ and Security+. It runs real detection and monitoring tools, and every incident and finding gets a documented write-up. The goal was a fully working home SOC — DNS filtering, a default-deny firewall, intrusion detection, and a SIEM — that I can actually operate and investigate with, not just install.
+A hands-on security operations lab I built on a Raspberry Pi 5 while studying for CompTIA Network+ and Security+. It runs real detection and monitoring tools, and every incident and finding gets a documented write-up. The goal was a fully working home SOC. DNS filtering, a default-deny firewall, intrusion detection, and a SIEM  that I can actually operate and investigate with, not just install.
 
 The investigations under `docs/investigations/` are the part I'm proudest of. They show not just that I stood the tools up, but that I can operate them, troubleshoot them when they fail, and make real tuning decisions.
 
@@ -44,10 +44,10 @@ A scan or suspicious packet hits the wire, Suricata matches it against a rule, w
 ## Investigations
 
 **[Investigation 01 — Port Scan Detection](docs/investigations/investigation-01-port-scan-detection.md)**
-Wrote a custom Suricata rule to detect port scans, found it wasn't firing, and troubleshot it end to end — traced a silent failure to a missing rules file and a HOME_NET direction mismatch, fixed both, and confirmed detection against a live Nmap scan. Mapped to MITRE ATT&CK T1046.
+Wrote a custom Suricata rule to detect port scans, found it wasn't firing, and troubleshot it end to end traced a silent failure to a missing rules file and a HOME_NET direction mismatch, fixed both, and confirmed detection against a live Nmap scan. Mapped to MITRE ATT&CK T1046.
 
 **[Investigation 01b — False Positive Tuning](docs/investigations/investigation-01b-dhcp-tuning.md)**
-Noticed benign DHCP alerts firing hourly from my gateway and suppressed them surgically — by signature and source — so the noise stops without losing detection coverage elsewhere.
+Noticed benign DHCP alerts firing hourly from my gateway and suppressed them by signature and source so the noise stops without losing detection coverage elsewhere.
 
 ## Skills Demonstrated
 
@@ -72,4 +72,4 @@ Intrusion detection (Suricata, custom rule writing), SIEM and log pipeline (Loki
 
 ## A Note on Ethics
 
-Everything here is authorized testing on equipment I own. Scanning or attacking systems you don't own is illegal — this lab exists specifically so I can practice safely on my own infrastructure.
+Everything here is authorized testing on equipment I own. Scanning or attacking systems you don't own is illegal. This lab exists specifically so I can practice safely on my own infrastructure.
